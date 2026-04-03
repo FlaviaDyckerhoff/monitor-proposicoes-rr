@@ -1,0 +1,9 @@
+{
+  "name": "monitor-proposicoes-rr",
+  "version": "1.0.0",
+  "description": "Monitor de proposições ALE-RR via SAPL",
+  "main": "monitor.js",
+  "dependencies": {
+    "nodemailer": "^6.9.0"
+  }
+}
