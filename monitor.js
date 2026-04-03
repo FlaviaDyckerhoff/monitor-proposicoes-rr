@@ -83,7 +83,12 @@ async function buscarProposicoes() {
   console.log(`🔍 Buscando proposições de ${ano} na ALE-RR...`);
 
   const url = `${API_BASE}/api/materia/materialegislativa/?ano=${ano}&page=1&page_size=100&ordering=-id`;
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    }
+  });
 
   if (!response.ok) {
     console.error(`❌ Erro na API: ${response.status} ${response.statusText}`);
