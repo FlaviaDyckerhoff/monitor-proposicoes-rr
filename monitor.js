@@ -91,8 +91,7 @@ async function buscarProposicoes() {
   });
 
   if (!response.ok) {
-    console.error(`❌ Erro na API: ${response.status} ${response.statusText}`);
-    return [];
+    throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
   }
 
   const json = await response.json();
