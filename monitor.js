@@ -17,6 +17,26 @@ function salvarEstado(estado) {
   fs.writeFileSync(ARQUIVO_ESTADO, JSON.stringify(estado, null, 2));
 }
 
+function registrarSaudeFonte(estado, status, detalhe) {
+  estado.ultima_execucao = new Date().toISOString();
+  estado.ultimo_status = {
+    status,
+    detalhe,
+    registrado_em: estado.ultima_execucao,
+  };
+  salvarEstado(estado);
+  console.log(`Status da fonte: ${status} - ${detalhe}`);
+}
+
+function escaparHtml(valor) {
+  return String(valor || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function enviarEmail(novas) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -34,11 +54,11 @@ async function enviarEmail(novas) {
     const header = `<tr><td colspan="5" style="padding:10px 8px 4px;background:#f0f4f8;font-weight:bold;color:#1a3a5c;font-size:13px;border-top:2px solid #1a3a5c">${tipo} — ${porTipo[tipo].length} proposição(ões)</td></tr>`;
     const rows = porTipo[tipo].map(p =>
       `<tr>
-        <td style="padding:8px;border-bottom:1px solid #eee;color:#555;font-size:12px">${p.tipo || '-'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee"><strong>${p.numero || '-'}/${p.ano || '-'}</strong></td>
-        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">${p.autor || '-'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px;white-space:nowrap">${p.data || '-'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">${p.ementa || '-'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;color:#555;font-size:12px">${escaparHtml(p.tipo || '-')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee"><strong><a href="${escaparHtml(p.url)}">${escaparHtml(p.numero || '-')}/${escaparHtml(p.ano || '-')}</a></strong></td>
+        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">${escaparHtml(p.autor || '-')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px;white-space:nowrap">${escaparHtml(p.data || '-')}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">${escaparHtml(p.ementa || '-')}</td>
       </tr>`
     ).join('');
     return header + rows;
@@ -91,7 +111,10 @@ async function buscarProposicoes() {
   });
 
   if (!response.ok) {
-    throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+    const erro = new Error(`Erro na API: ${response.status} ${response.statusText}`);
+    erro.status = response.status;
+    erro.url = url;
+    throw erro;
   }
 
   const json = await response.json();
@@ -120,7 +143,8 @@ function normalizarProposicao(p) {
       ? p.autores.map(a => a.nome || a).join(', ')
       : '-',
     data: p.data_apresentacao || '-',
-    ementa: (p.ementa || '-').substring(0, 200),
+    ementa: (p.ementa || '-').substring(0, 500),
+    url: `${API_BASE}/materia/${p.id}`,
   };
 }
 
@@ -131,7 +155,25 @@ function normalizarProposicao(p) {
   const estado = carregarEstado();
   const idsVistos = new Set(estado.proposicoes_vistas.map(String));
 
-  const raw = await buscarProposicoes();
+  let raw;
+  try {
+    raw = await buscarProposicoes();
+  } catch (err) {
+    if (err.status === 403) {
+      registrarSaudeFonte(
+        estado,
+        'source_blocked',
+        'ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.'
+      );
+      process.exit(0);
+    }
+    registrarSaudeFonte(
+      estado,
+      'source_error',
+      err.message || 'Erro desconhecido ao consultar ALE-RR/SAPL'
+    );
+    process.exit(1);
+  }
 
   if (raw.length === 0) {
     console.log('⚠️ Nenhuma proposição encontrada.');
