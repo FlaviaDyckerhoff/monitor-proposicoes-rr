@@ -22,6 +22,11 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
+      - name: Corrigir permissões do workspace
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" 2>/dev/null || true
+          test -w .git || { echo "Workspace sem permissão de escrita"; exit 1; }
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
