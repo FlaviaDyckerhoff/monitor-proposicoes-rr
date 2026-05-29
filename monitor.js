@@ -28,6 +28,13 @@ function registrarSaudeFonte(estado, status, detalhe) {
   console.log(`Status da fonte: ${status} - ${detalhe}`);
 }
 
+function jaAlertouFonteHoje(estado, status) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return estado.ultimo_alerta_fonte &&
+    estado.ultimo_alerta_fonte.status === status &&
+    String(estado.ultimo_alerta_fonte.enviado_em || '').slice(0, 10) === hoje;
+}
+
 function escaparHtml(valor) {
   return String(valor || '')
     .replace(/&/g, '&amp;')
@@ -35,6 +42,37 @@ function escaparHtml(valor) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+async function enviarAlertaFonte(status, detalhe) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: EMAIL_REMETENTE, pass: EMAIL_SENHA },
+  });
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:760px;margin:0 auto">
+      <h2 style="color:#8a1f11;border-bottom:2px solid #8a1f11;padding-bottom:8px">
+        ⚠️ ALE-RR — monitor sem acesso à fonte oficial
+      </h2>
+      <p>O monitor de proposições novas de RR executou, mas não conseguiu consultar a fonte oficial.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Status</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(status)}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Detalhe</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(detalhe)}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Fonte</td><td style="padding:8px;border:1px solid #ddd"><a href="${API_BASE}/api/materia/materialegislativa/">${API_BASE}</a></td></tr>
+      </table>
+      <p style="font-size:12px;color:#777;margin-top:16px">Enquanto a fonte estiver bloqueada, não há como confirmar proposições novas de RR por este monitor.</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"Monitor Roraima" <${EMAIL_REMETENTE}>`,
+    to: EMAIL_DESTINO,
+    subject: `⚠️ Roraima: monitor sem acesso à fonte oficial — ${new Date().toLocaleDateString('pt-BR')}`,
+    html,
+  });
+
+  console.log('✅ Alerta operacional de fonte enviado.');
 }
 
 async function enviarEmail(novas) {
@@ -160,10 +198,19 @@ function normalizarProposicao(p) {
     raw = await buscarProposicoes();
   } catch (err) {
     if (err.status === 403) {
+      const detalhe = 'ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.';
+      if (!jaAlertouFonteHoje(estado, 'source_blocked')) {
+        await enviarAlertaFonte('source_blocked', detalhe);
+        estado.ultimo_alerta_fonte = {
+          status: 'source_blocked',
+          detalhe,
+          enviado_em: new Date().toISOString(),
+        };
+      }
       registrarSaudeFonte(
         estado,
         'source_blocked',
-        'ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.'
+        detalhe
       );
       process.exit(0);
     }
