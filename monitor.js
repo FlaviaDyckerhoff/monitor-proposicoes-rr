@@ -6,6 +6,7 @@ const EMAIL_REMETENTE = process.env.EMAIL_REMETENTE;
 const EMAIL_SENHA = process.env.EMAIL_SENHA;
 const ARQUIVO_ESTADO = 'estado.json';
 const API_BASE = 'https://sapl.al.rr.leg.br';
+const DRY_RUN = process.env.DRY_RUN === '1';
 
 function carregarEstado() {
   if (fs.existsSync(ARQUIVO_ESTADO))
@@ -199,6 +200,10 @@ function normalizarProposicao(p) {
   } catch (err) {
     if (err.status === 403) {
       const detalhe = 'ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.';
+      if (DRY_RUN) {
+        console.log(`🧪 Dry-run ativo: alerta de fonte não enviado e estado não alterado. ${detalhe}`);
+        process.exit(0);
+      }
       if (!jaAlertouFonteHoje(estado, 'source_blocked')) {
         await enviarAlertaFonte('source_blocked', detalhe);
         estado.ultimo_alerta_fonte = {
@@ -233,7 +238,10 @@ function normalizarProposicao(p) {
   const novas = proposicoes.filter(p => !idsVistos.has(p.id));
   console.log(`🆕 Proposições novas: ${novas.length}`);
 
-  if (novas.length > 0) {
+  if (novas.length > 0 && DRY_RUN) {
+    const amostra = novas.slice(0, 5).map(p => `${p.tipo} ${p.numero}/${p.ano} -> ${p.url}`).join('\n');
+    console.log(`🧪 Dry-run ativo: email não enviado e estado não alterado. Amostra com links:\n${amostra}`);
+  } else if (novas.length > 0) {
     novas.sort((a, b) => {
       if (a.tipo < b.tipo) return -1;
       if (a.tipo > b.tipo) return 1;

@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '56 9 * * *'   # 06:56 BRT
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Rodar sem enviar email nem atualizar estado (1=sim)'
+        required: false
+        default: ''
 
 concurrency:
   group: monitor-proposicoes-rr
@@ -42,9 +47,11 @@ jobs:
           EMAIL_REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
           EMAIL_SENHA: ${{ secrets.EMAIL_SENHA }}
           EMAIL_DESTINO: ${{ secrets.EMAIL_DESTINO }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: node monitor.js
 
       - name: Salvar estado atualizado no repositório
+        if: ${{ github.event.inputs.dry_run != '1' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
