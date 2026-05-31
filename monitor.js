@@ -45,6 +45,18 @@ function escaparHtml(valor) {
     .replace(/'/g, '&#39;');
 }
 
+function statusHumanoFonte(status) {
+  if (status === 'source_blocked') return 'Fonte oficial bloqueada para coleta (HTTP 403)';
+  return status;
+}
+
+function observacaoFalhaFonte(status, detalhe) {
+  if (status === 'source_blocked') {
+    return 'A ALE-RR/SAPL está ativa para alguns acessos, mas retorna 403 Forbidden para a coleta automatizada do monitor. Isso indica bloqueio seletivo/configuração de servidor/WAF, não erro de código do monitor. Impacto: enquanto o acesso não for liberado, não conseguimos confirmar proposições novas de RR por esta fonte. Próxima ação: manter alerta operacional e buscar liberação/whitelist ou fonte oficial alternativa.';
+  }
+  return detalhe;
+}
+
 async function enviarAlertaFonte(status, detalhe) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -58,8 +70,8 @@ async function enviarAlertaFonte(status, detalhe) {
       </h2>
       <p>O monitor de proposições novas de RR executou, mas não conseguiu consultar a fonte oficial.</p>
       <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
-        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Status</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(status)}</td></tr>
-        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Detalhe</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(detalhe)}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Status</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(statusHumanoFonte(status))}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Por que falhou</td><td style="padding:8px;border:1px solid #ddd">${escaparHtml(observacaoFalhaFonte(status, detalhe))}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Fonte</td><td style="padding:8px;border:1px solid #ddd"><a href="${API_BASE}/api/materia/materialegislativa/">${API_BASE}</a></td></tr>
       </table>
       <p style="font-size:12px;color:#777;margin-top:16px">Enquanto a fonte estiver bloqueada, não há como confirmar proposições novas de RR por este monitor.</p>
