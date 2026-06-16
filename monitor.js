@@ -203,29 +203,42 @@ async function enviarEmail(novas) {
 
 async function buscarProposicoes() {
   const ano = new Date().getFullYear();
+  const pageSize = 100;
+  const maxPaginas = 200;
+  const todas = [];
   console.log(`🔍 Buscando proposições de ${ano} na ALE-RR...`);
 
-  const url = `${API_BASE}/api/materia/materialegislativa/?ano=${ano}&page=1&page_size=100&ordering=-id`;
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    }
-  });
+  for (let pagina = 1; pagina <= maxPaginas; pagina++) {
+    const url = `${API_BASE}/api/materia/materialegislativa/?ano=${ano}&page=${pagina}&page_size=${pageSize}&ordering=-id`;
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      }
+    });
 
-  if (!response.ok) {
-    const erro = new Error(`Erro na API: ${response.status} ${response.statusText}`);
-    erro.status = response.status;
-    erro.url = url;
-    throw erro;
+    if (!response.ok) {
+      const erro = new Error(`Erro na API: ${response.status} ${response.statusText}`);
+      erro.status = response.status;
+      erro.url = url;
+      throw erro;
+    }
+
+    const json = await response.json();
+    const lista = json.results || [];
+    const pagination = json.pagination || {};
+    const totalPaginas = pagination.total_pages || (json.count ? Math.ceil(json.count / pageSize) : null);
+    console.log(`📄 Página ${pagina}/${totalPaginas || '?'}: ${lista.length} proposições`);
+
+    if (lista.length === 0) break;
+    todas.push(...lista);
+
+    const temProxima = Boolean(json.next || pagination.links?.next || pagination.next_page);
+    if (totalPaginas ? pagina >= totalPaginas : !temProxima && lista.length < pageSize) break;
   }
 
-  const json = await response.json();
-  console.log(`📦 Total na API: ${json.count || '?'}`);
-
-  const lista = json.results || [];
-  console.log(`📊 ${lista.length} proposições recebidas`);
-  return lista;
+  console.log(`📊 ${todas.length} proposições recebidas`);
+  return todas;
 }
 
 function extrairTipo(p) {
