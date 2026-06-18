@@ -102,15 +102,15 @@
     "18832",
     "19045"
   ],
-  "ultima_execucao": "2026-06-17T12:42:34.731Z",
+  "ultima_execucao": "2026-06-18T08:37:43.951Z",
   "ultimo_status": {
     "status": "source_blocked",
     "detalhe": "ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.",
-    "registrado_em": "2026-06-17T12:42:34.731Z"
+    "registrado_em": "2026-06-18T08:37:43.951Z"
   },
   "ultimo_alerta_fonte": {
     "status": "source_blocked",
     "detalhe": "ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.",
-    "enviado_em": "2026-06-17T08:37:47.352Z"
+    "enviado_em": "2026-06-18T08:37:43.951Z"
   }
 }
