@@ -71,7 +71,6 @@ async function enviarAlertaFonte(status, detalhe) {
   });
 
   const html = `
-      ${renderRadar03EmailButton(novas)}
     <div style="font-family:Arial,sans-serif;max-width:760px;margin:0 auto">
       <h2 style="color:#8a1f11;border-bottom:2px solid #8a1f11;padding-bottom:8px">
         ⚠️ ALE-RR — monitor sem acesso à fonte oficial
