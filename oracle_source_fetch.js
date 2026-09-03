@@ -49,13 +49,9 @@ async function fetchWithOracleFallback(url, options = {}, timeoutMs = 25000) {
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    if (response.status !== 403) return response;
-    const fallback = oracleFetch(url, options);
-    activated = true;
-    console.log(`source_route=direct_403 -> oracle_2245_${fallback.status} host=${ALLOWED_HOST}`);
-    return fallback;
+    response = await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
     const fallback = oracleFetch(url, options);
     activated = true;
@@ -65,6 +61,11 @@ async function fetchWithOracleFallback(url, options = {}, timeoutMs = 25000) {
   } finally {
     clearTimeout(timer);
   }
+  if (response.status !== 403) return response;
+  const fallback = oracleFetch(url, options);
+  activated = true;
+  console.log(`source_route=direct_403 -> oracle_2245_${fallback.status} host=${ALLOWED_HOST}`);
+  return fallback;
 }
 
 module.exports = { fetchWithOracleFallback };
