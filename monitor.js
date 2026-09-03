@@ -10,6 +10,7 @@ function fichaEmailButtonHtml() {
 
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const { fetchWithOracleFallback } = require('./oracle_source_fetch');
 let promoverInteresseClienteProposicao = (_item, atuais) => Array.isArray(atuais) ? atuais : [];
 try {
   try {
@@ -602,12 +603,12 @@ async function buscarProposicoes() {
 
   for (let pagina = 1; pagina <= maxPaginas; pagina++) {
     const url = `${API_BASE}/api/materia/materialegislativa/?ano=${ano}&page=${pagina}&page_size=${pageSize}&ordering=-id`;
-    const response = await fetch(url, {
+    const response = await fetchWithOracleFallback(url, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       }
-    });
+    }, 25000);
 
     if (!response.ok) {
       const erro = new Error(`Erro na API: ${response.status} ${response.statusText}`);
@@ -617,6 +618,9 @@ async function buscarProposicoes() {
     }
 
     const json = await response.json();
+    if (!Array.isArray(json.results)) {
+      throw new Error(`Estrutura inesperada da API em ${url}`);
+    }
     const lista = json.results || [];
     const pagination = json.pagination || {};
     const totalPaginas = pagination.total_pages || (json.count ? Math.ceil(json.count / pageSize) : null);
