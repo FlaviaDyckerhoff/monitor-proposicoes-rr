@@ -588,7 +588,7 @@ async function enviarEmail(novas) {
     from: `"Monitor Roraima" <${EMAIL_REMETENTE}>`,
     to: EMAIL_DESTINO,
     subject: assuntoEmailClienteCitado(novas, `🏛️ Roraima: ${novas.length} nova(s) proposição(ões) — ${new Date().toLocaleDateString('pt-BR')}`),
-    html: fichaEmailButtonHtml() + html,
+    html: fichaEmailButtonHtml() + renderRadar03EmailButton(novas) + html,
   });
 
   console.log(`✅ Email enviado com ${novas.length} proposições novas.`);
