@@ -820,9 +820,13 @@
     "19606",
     "19605",
     "19604",
-    "19603"
+    "19603",
+    "19608",
+    "19610",
+    "19609",
+    "19607"
   ],
-  "ultima_execucao": "2026-11-19T08:40:12.137Z",
+  "ultima_execucao": "2026-11-20T08:40:05.608Z",
   "ultimo_status": {
     "status": "source_blocked",
     "detalhe": "ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.",
