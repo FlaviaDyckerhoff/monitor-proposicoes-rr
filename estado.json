@@ -844,7 +844,7 @@
     "19613",
     "19612"
   ],
-  "ultima_execucao": "2026-11-26T08:40:35.122Z",
+  "ultima_execucao": "2026-11-27T08:40:02.323Z",
   "ultimo_status": {
     "status": "source_blocked",
     "detalhe": "ALE-RR/SAPL retornou 403 Forbidden para a API publica; sem alerta novo ate a fonte voltar.",
